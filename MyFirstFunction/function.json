@@ -4,7 +4,7 @@
             "authLevel": "function",
             "type": "httpTrigger",
             "direction": "in",
-            "name": "$return",
+            "name": "req",
             "methods": ["get", "post"]
         },
         {
@@ -13,5 +13,5 @@
             "name": "res"
         }
     ],
-    "scriptFile": "../dist/MyFirstFunction-second-attempt/index.js"
+    "scriptFile": "../dist/MyFirstFunction/index.js"
 }

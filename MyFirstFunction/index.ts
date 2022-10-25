@@ -7,8 +7,9 @@ const httpTrigger: AzureFunction = async function (
     context.log('My first function was triggered, id: ', context.invocationId)
 
     const name = context.req?.query.name
-    if (name) return Promise.resolve({ body: `¡Hola, ${name}!, Que tal?` })
-    else return Promise.resolve({ body: `¿Como te llamas?` })
+    context.res = {
+        body: name ? `¡Hola, ${name}!, Que tal?` : `¿Como te llamas?`,
+    }
 
     // context.log('HTTP trigger function processed a request.');
     // const name = (req.query.name || (req.body && req.body.name));
