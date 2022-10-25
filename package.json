@@ -4,7 +4,7 @@
     "description": "A small project for messing around with azure functions.",
     "main": "index.js",
     "scripts": {
-        "build": "tsc"
+        "build": "tsc --build",
         "format": "prettier ./src --write"
     },
     "repository": {
