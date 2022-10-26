@@ -55,7 +55,7 @@ const httpTrigger: AzureFunction = async (context, req: HttpRequest) => {
     const dbUrl = `postgres://${dbUser}:${dbPassword}@${dbHost}/?options=project%3D${neonProjectId}`
     const dbUrlFormatted = dbUrl
         .replace(/:\w+@/, ':<password>@') // hide the password
-        .replace(/\?options.*$/, neonProjectId) // convert url back to normal format
+        .replace(/\?options.*$/, targetDbName) // convert url back to normal format
 
     const sourceDbSql = postgres(dbUrl, {
         ssl: 'require',
