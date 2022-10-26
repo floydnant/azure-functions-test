@@ -1,0 +1,8 @@
+{
+    "sourceDbName": "main",
+    "targetDbName": "pr-123",
+    "neonProjectId": "fancy-mouse-984056",
+    "neonApiKey": "<neon-api-key>",
+    "neonDbOwnerId": 12345,
+    "dbPassword": "<password>"
+}
