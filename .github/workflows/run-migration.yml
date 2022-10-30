@@ -35,7 +35,9 @@ jobs:
           cache: 'npm'
           cache-dependency-path: client-v2/package-lock.json
 
+      - run: ls
       - run: cd ./server
+      - run: ls
       - run: npm ci
       
       - run: npx prisma migrate deploy
