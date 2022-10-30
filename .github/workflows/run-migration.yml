@@ -1,48 +1,48 @@
 name: Run migration on specified branch and database
 
 on:
-  repository_dispatch: 
-    types: [migration]
-  workflow_dispatch:
-    inputs:
-      branch:
-        description: 'Branch/ref/SHA to get migrations from'
-        required: true
-        default: 'main'
-        type: string # maybe there is an extra ref type or sth?
-      db_url:
-        description: 'The database to migrate'
-        required: true
-        type: string # maybe there is a url type?
+    repository_dispatch:
+        types: [migration]
+    workflow_dispatch:
+        inputs:
+            branch:
+                description: 'Branch/ref/SHA to get migrations from'
+                required: true
+                default: 'main'
+                type: string # maybe there is an extra ref type or sth?
+            db_url:
+                description: 'The database to migrate'
+                required: true
+                type: string # maybe there is a url type?
 
 # env:
 #   AZURE_FUNCTIONAPP_PACKAGE_PATH: '.' # set this to the path to your web app project, defaults to the repository root
 #   NODE_VERSION: '16.x' # set this to the node version to use (supports 8.x, 10.x, 12.x)
 
 jobs:
-  migrate-new-db:
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo 'Branch ${{ inputs.branch }}'
-      - run: echo 'DB Url ${{ inputs.db_url }}'
+    migrate-new-db:
+        runs-on: ubuntu-latest
+        steps:
+            - run: echo 'Branch ${{ github.event.client_payload.branch || inputs.branch }}'
+            - run: echo 'DB Url ${{ github.event.client_payload.db_url || inputs.db_url}}'
 
-      - name: Checkout branch
-        uses: actions/checkout@v2
-        with:
-          repository: dein-ding/todo-app # this will be obsolete when the workflow is located in the respective repo
-          ref: ${{ inputs.branch }}
-      
-      - name: Setup Node.js environment
-        uses: actions/setup-node@v3
-        with:
-          node-version: 16.x
-          cache: 'npm'
-          cache-dependency-path: server/package-lock.json
+            - name: Checkout branch
+              uses: actions/checkout@v2
+              with:
+                  repository: dein-ding/todo-app # this will be obsolete when the workflow is located in the respective repo
+                  ref: ${{ github.event.client_payload.branch || inputs.branch }}
 
-      - run: npm ci
-        working-directory: ./server
-      
-      - run: npx prisma migrate deploy
-        working-directory: ./server
-        env: 
-          DATABASE_URL: ${{ inputs.db_url }}
+            - name: Setup Node.js environment
+              uses: actions/setup-node@v3
+              with:
+                  node-version: 16.x
+                  cache: 'npm'
+                  cache-dependency-path: server/package-lock.json
+
+            - run: npm ci
+              working-directory: ./server
+
+            - run: npx prisma migrate deploy
+              working-directory: ./server
+              env:
+                  DATABASE_URL: ${{ github.event.client_payload.db_url || inputs.db_url }}
