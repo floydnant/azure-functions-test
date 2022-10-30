@@ -1,8 +1,8 @@
 name: Run migration on specified branch and database
 
 on:
-  repository_dispatch: migration
-  workflow_dispatch:
+  repository_dispatch: 
+    types: [migration]
     inputs:
       branch:
         description: 'Branch/ref/SHA to get migrations from'
