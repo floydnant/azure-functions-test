@@ -23,9 +23,6 @@ jobs:
     migrate-new-db:
         runs-on: ubuntu-latest
         steps:
-            - run: echo 'Branch ${{ github.event.client_payload.branch || inputs.branch }}'
-            - run: echo 'DB Url ${{ github.event.client_payload.db_url || inputs.db_url}}'
-
             - name: Checkout branch
               uses: actions/checkout@v2
               with:
