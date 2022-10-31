@@ -1,8 +1,12 @@
 {
-    "sourceDbName": "main",
-    "targetDbName": "pr-123",
-    "neonProjectId": "fancy-mouse-984056",
+    "sourceDbName": "<db>",
+    "targetDbName": "<db>",
+    "dbUser": "<user>",
+    "dbPassword": "<password>",
+
+    "githubApikey": "<github-api-key>"
+
     "neonApiKey": "<neon-api-key>",
-    "neonDbOwnerId": 12345,
-    "dbPassword": "<password>"
+    "neonProjectId": "<neon-project-id>",
+    "neonDbOwnerId": "<neon-db-owner-id>",
 }

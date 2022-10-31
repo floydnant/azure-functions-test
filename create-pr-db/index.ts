@@ -1,103 +1,107 @@
-import { AzureFunction, HttpRequest } from '@azure/functions'
-import type AxiosType from 'axios'
-const axios = require('axios') as typeof AxiosType
-import postgres = require('postgres')
+import { AzureFunction, HttpRequest } from '@azure/functions';
+import type Axios from 'axios';
+const axios = require('axios') as typeof Axios;
 
-type ColumnValue = string | number | null
-type Rows = Record<string, ColumnValue>[]
-type DbDumpResult = [tableName: string, rows: Rows][]
+const getAuthHeader = (token: string) => ({ headers: { Authorization: `Bearer ${token}` } });
 
-// get all tables: SELECT * FROM information_schema.tables WHERE table_type = 'BASE TABLE' AND table_name NOT LIKE 'pg_%' AND table_name NOT LIKE 'sql_%'
-// get all dbs: SELECT datname FROM pg_database
-
-const getDbDump = async (sql: postgres.Sql<{}>): Promise<DbDumpResult> => {
-    const tables =
-        await sql`SELECT table_name FROM information_schema.tables WHERE table_type = 'BASE TABLE' AND table_name NOT LIKE 'pg_%' AND table_name NOT LIKE 'sql_%'`
-    const tableNames = tables.map((t) => t.table_name)
-    console.log(tableNames)
-
-    return await Promise.all(
-        tableNames.map(async (name) => [
-            name,
-            await sql`SELECT * FROM public.${sql(name)}`,
-        ])
-    )
-}
+type SuccessfulOrError = true | Record<string, string>;
 
 const httpTrigger: AzureFunction = async (context, req: HttpRequest) => {
-    const sourceDbName = req.body.sourceDbName || 'main'
-    const targetDbName = req.body.targetDbName
+    const {
+        sourceDbName,
+        targetDbName,
+        dbUser,
+        dbPassword,
 
-    const neonApiKey = req.body.neonApiKey || process.env.NEON_API_KEY
-    const neonProjectId = req.body.neonProjectId || 'fancy-mouse-984056' // <- project rockket
-    const neonDbOwnerId = req.body.neonDbOwnerId || process.env.NEON_DB_OWNER_ID
+        githubApikey,
+
+        neonApiKey,
+        neonProjectId,
+        neonDbOwnerId,
+    } = req.body;
 
     // 1. Create new db with neon API
-    const neonUrl = `https://console.neon.tech/api/v1/projects/${neonProjectId}/databases`
-    const body = {
+    const neonBody = {
         database: {
             name: targetDbName,
             owner_id: neonDbOwnerId,
         },
+    };
+    const dbCreationSuccessfulOrError: SuccessfulOrError = await axios
+        .post(
+            `https://console.neon.tech/api/v1/projects/${neonProjectId}/databases`,
+            neonBody,
+            getAuthHeader(neonApiKey)
+        )
+        .then(() => true)
+        .catch((err) => {
+            // context.log('DB CREATION FAILED', err);
+            return err.response.data;
+        });
+
+    if (dbCreationSuccessfulOrError !== true) {
+        context.res = {
+            status: 400,
+            body: JSON.stringify({
+                message: 'Something went wrong with neon. Check the logs.',
+                response: dbCreationSuccessfulOrError,
+            }),
+            headers: { 'Content-Type': 'application/json' }, // so that postman formats the response nicely
+        };
+        return;
     }
-    const neonResponse = await axios.post(neonUrl, body, {
-        headers: { Authorization: `Bearer ${neonApiKey}` },
-    })
-    // .catch((err) => console.error(err))
 
-    context.log('NEON RESPONSE:', (neonResponse as any).data)
+    const dbHost = `${neonProjectId}.cloud.neon.tech`;
 
-    // 2. Here migration process would have to happen
+    const postgresDbUrl = `postgres://${dbUser}:${dbPassword}@${dbHost}/?options=project%3D${neonProjectId}`;
+    const migrationCallbackUrl = new URL(`https://${process.env.WEBSITE_HOSTNAME}/api/copy-db`);
+    migrationCallbackUrl.search = new URLSearchParams({
+        sourceDbName,
+        targetDbName,
+        dbUrl: postgresDbUrl,
+    }).toString();
+    // context.log('MIGRATION CALLBACK URL', migrationCallbackUrl);
 
-    const dbHost = `${neonProjectId}.cloud.neon.tech`
-    const dbUser = 'dein-ding'
-    const dbPassword = req.body.dbPassword || process.env.DB_PASSWORD
-    const dbUrl = `postgres://${dbUser}:${dbPassword}@${dbHost}/?options=project%3D${neonProjectId}`
-    const dbUrlFormatted = dbUrl
-        .replace(/:\w+@/, ':<password>@') // hide the password
-        .replace(/\?options.*$/, targetDbName) // convert url back to normal format
+    const prismaDbUrl = `postgresql://<user>:<password>@${dbHost}:5432/${targetDbName}`;
 
-    const sourceDbSql = postgres(dbUrl, {
-        ssl: 'require',
-        database: sourceDbName,
-    })
-    const targetDbSql = postgres(dbUrl, {
-        ssl: 'require',
-        database: targetDbName,
-    })
+    // 2. Dispatch migration workflow
+    const ghRepo = 'dein-ding/azure-functions-test'; // the repo where the workflow is located
+    const ghBody = {
+        event_type: 'migration',
+        client_payload: {
+            branch: sourceDbName,
+            db_url: prismaDbUrl.replace('<user>', dbUser).replace('<password>', dbPassword),
+            callback_url: migrationCallbackUrl.toString(),
+        },
+    };
+    const dispatchSuccessfulOrError: SuccessfulOrError = await axios
+        .post(`https://api.github.com/repos/${ghRepo}/dispatches`, ghBody, getAuthHeader(githubApikey))
+        .then(() => true)
+        .catch((err) => {
+            // context.log('WORKFLOW DISPATCH FAILED:', err);
+            return err.response.data;
+        });
 
-    // 3. Get db dump
-    context.log('DUMP SOURCE')
-    const sourceDbDump = await getDbDump(sourceDbSql)
-
-    // 4. Copy the dump into the newly created db
-    context.log('COPY INTO TARGET')
-    await Promise.all(
-        sourceDbDump.map(async ([tableName, rows]) => {
-            // await sqlNewDb`CREATE TABLE ${sql(tableName)}` //<--- logical mistake here
-            await targetDbSql`INSERT INTO ${targetDbSql(
-                tableName
-            )} ${sourceDbSql(rows)}`
-        })
-    )
-
-    // 5. Verify, that copy succeeded
-    context.log('DUMP TARGET')
-    const targetDbDump = await getDbDump(targetDbSql)
-    const isAcurateMatch =
-        JSON.stringify(sourceDbDump) == JSON.stringify(targetDbDump)
+    if (dispatchSuccessfulOrError !== true) {
+        context.res = {
+            status: 422,
+            body: JSON.stringify({
+                message: 'Something went wrong with github. Check the logs.',
+                response: dispatchSuccessfulOrError,
+            }),
+            headers: { 'Content-Type': 'application/json' }, // so that postman formats the response nicely
+        };
+        return;
+    }
 
     context.res = {
         status: 201,
         body: JSON.stringify({
-            targetDbName,
-            url: dbUrlFormatted,
-            isAcurateMatch,
-            sourceDbDump: Object.fromEntries(sourceDbDump),
-            targetDbDump: Object.fromEntries(targetDbDump),
+            prismaDbUrl,
+            message: 'Smoothly created db and dispatched migration workflow.',
         }),
         headers: { 'Content-Type': 'application/json' }, // so that postman formats the response nicely
-    }
-}
+    };
+};
 
-export default httpTrigger
+export default httpTrigger;
