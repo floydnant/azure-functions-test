@@ -45,4 +45,6 @@ jobs:
                   DATABASE_URL: ${{ github.event.client_payload.db_url || inputs.db_url }}
 
             - name: Send Webhook callback
-              run: url='${{ github.event.client_payload.callback_url || inputs.callback_url }}'; if [[ -z $url ]]; then echo 'No callback'; else curl -X GET $url; fi;
+              env:
+                  url: ${{ github.event.client_payload.callback_url || inputs.callback_url }}
+              run: if [[ -z $url ]]; then echo 'No callback'; else curl -X GET $url; fi;
