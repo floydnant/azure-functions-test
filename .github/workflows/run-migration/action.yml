@@ -1,21 +1,19 @@
-name: Run migration on specified branch and database
-
-on:
-    workflow_call:
-        inputs:
-            branch:
-                description: Branch/ref/SHA to get migrations from
-                required: true
-                default: main
-                type: string
-            db_url:
-                description: The database to migrate
-                required: true
-                type: string
-            callback_url:
-                description: Webhook to call when migration is finished
-                required: false
-                type: string
+name: Run migrations
+description: Run migrations from specified branch on specified database
+inputs:
+    branch:
+        description: Branch/ref/SHA to get migrations from
+        required: true
+        default: main
+        type: string
+    db_url:
+        description: The database to migrate
+        required: true
+        type: string
+    callback_url:
+        description: Webhook to call when migration is finished
+        required: false
+        type: string
 
 runs:
     using: composite
