@@ -17,32 +17,31 @@ on:
                 required: false
                 type: string
 
-jobs:
-    migrate-new-db:
-        runs-on: ubuntu-latest
-        steps:
-            - name: Checkout branch
-              uses: actions/checkout@v2
-              with:
-                  repository: dein-ding/todo-app # this will be obsolete when the workflow is located in the respective repo
-                  ref: ${{ inputs.branch }}
+runs:
+    using: composite
+    steps:
+        - name: Checkout branch
+          uses: actions/checkout@v2
+          with:
+              repository: dein-ding/todo-app # this will be obsolete when the workflow is located in the respective repo
+              ref: ${{ inputs.branch }}
 
-            - name: Setup Node.js environment
-              uses: actions/setup-node@v3
-              with:
-                  node-version: 16.x
-                  cache: 'npm'
-                  cache-dependency-path: server/package-lock.json
+        - name: Setup Node.js environment
+          uses: actions/setup-node@v3
+          with:
+              node-version: 16.x
+              cache: 'npm'
+              cache-dependency-path: server/package-lock.json
 
-            - run: npm ci
-              working-directory: ./server
+        - run: npm ci
+          working-directory: ./server
 
-            - run: npx prisma migrate deploy
-              working-directory: ./server
-              env:
-                  DATABASE_URL: ${{ inputs.db_url }}
+        - run: npx prisma migrate deploy
+          working-directory: ./server
+          env:
+              DATABASE_URL: ${{ inputs.db_url }}
 
-            - name: Send Webhook callback
-              env:
-                  url: ${{ inputs.callback_url }}
-              run: if [[ -z $url ]]; then echo 'No callback'; else curl -X GET $url; fi;
+        - name: Send Webhook callback
+          env:
+              url: ${{ inputs.callback_url }}
+          run: if [[ -z $url ]]; then echo 'No callback'; else curl -X GET $url; fi;
