@@ -28,7 +28,7 @@ jobs:
                   -H 'accept: application/json' \
                   -H 'Content-Type: application/json' \
                   -H "Authorization: Bearer ${{ env.neon_api_key }}" \
-                  -d '{ "database": { "name": "${{ env.target_db_name }}", "owner_id": "${{ env.neon_db_owner }}" } }'
+                  -d '{ "database": { "name": "${{ env.target_db_name }}", "owner_id": ${{ env.neon_db_owner }} } }'
 
     migrate-db:
         runs-on: ubuntu-latest
