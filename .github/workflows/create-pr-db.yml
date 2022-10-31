@@ -24,10 +24,10 @@ jobs:
         steps:
             - name: Tell neon to create a new database
               run: |
-                  curl -X POST "https://console.neon.tech/api/v1/projects/${{ env.neon_project_id }}/databases" \
+                  curl -X POST 'https://console.neon.tech/api/v1/projects/${{ env.neon_project_id }}/databases' \
                   -H 'accept: application/json' \
                   -H 'Content-Type: application/json' \
-                  -H "Authorization: Bearer ${{ env.neon_api_key }}" \
+                  -H 'Authorization: Bearer ${{ env.neon_api_key }}' \
                   -d '{ "database": { "name": "${{ env.target_db_name }}", "owner_id": ${{ env.neon_db_owner }} } }'
 
     migrate-db:
@@ -35,7 +35,7 @@ jobs:
         needs: [create-new-db]
         steps:
             - uses: actions/checkout@v2
-            - uses: .github/workflows/run-migration
+            - uses: ./.github/workflows/run-migration
               with:
                   branch: ${{ env.migration_source_branch }}
                   db_url: postgresql://${{ env.db_user }}:${{ env.db_password }}@${{ env.neon_project_id }}.cloud.neon.tech:5432/${{ env.target_db_name }}
