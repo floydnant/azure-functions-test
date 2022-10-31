@@ -1,8 +1,6 @@
 name: Run migration on specified branch and database
 
 on:
-    repository_dispatch:
-        types: [migration]
     workflow_call:
         inputs:
             branch:
