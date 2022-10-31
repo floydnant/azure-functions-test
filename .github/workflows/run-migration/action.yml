@@ -1,5 +1,7 @@
 name: Run migration on specified branch and database
 
+# bullshit change
+
 on:
     repository_dispatch:
         types: [migration]
