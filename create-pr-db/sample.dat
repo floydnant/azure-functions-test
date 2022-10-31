@@ -9,4 +9,6 @@
     "neonApiKey": "<neon-api-key>",
     "neonProjectId": "<neon-project-id>",
     "neonDbOwnerId": "<neon-db-owner-id>",
+
+    "copyDbFunctionKey": "<function-key>"
 }

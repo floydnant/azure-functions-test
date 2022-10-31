@@ -1,10 +1,10 @@
-import { AzureFunction, HttpRequest } from '@azure/functions';
-import type Axios from 'axios';
-const axios = require('axios') as typeof Axios;
+import { AzureFunction, HttpRequest } from '@azure/functions'
+import type Axios from 'axios'
+const axios = require('axios') as typeof Axios
 
-const getAuthHeader = (token: string) => ({ headers: { Authorization: `Bearer ${token}` } });
+const getAuthHeader = (token: string) => ({ headers: { Authorization: `Bearer ${token}` } })
 
-type SuccessfulOrError = true | Record<string, string>;
+type SuccessfulOrError = true | Record<string, string>
 
 const httpTrigger: AzureFunction = async (context, req: HttpRequest) => {
     const {
@@ -18,7 +18,9 @@ const httpTrigger: AzureFunction = async (context, req: HttpRequest) => {
         neonApiKey,
         neonProjectId,
         neonDbOwnerId,
-    } = req.body;
+
+        copyDbFunctionKey,
+    } = req.body
 
     // 1. Create new db with neon API
     const neonBody = {
@@ -26,7 +28,7 @@ const httpTrigger: AzureFunction = async (context, req: HttpRequest) => {
             name: targetDbName,
             owner_id: neonDbOwnerId,
         },
-    };
+    }
     const dbCreationSuccessfulOrError: SuccessfulOrError = await axios
         .post(
             `https://console.neon.tech/api/v1/projects/${neonProjectId}/databases`,
@@ -34,10 +36,10 @@ const httpTrigger: AzureFunction = async (context, req: HttpRequest) => {
             getAuthHeader(neonApiKey)
         )
         .then(() => true)
-        .catch((err) => {
+        .catch(err => {
             // context.log('DB CREATION FAILED', err);
-            return err.response.data;
-        });
+            return err.response.data
+        })
 
     if (dbCreationSuccessfulOrError !== true) {
         context.res = {
@@ -47,25 +49,26 @@ const httpTrigger: AzureFunction = async (context, req: HttpRequest) => {
                 response: dbCreationSuccessfulOrError,
             }),
             headers: { 'Content-Type': 'application/json' }, // so that postman formats the response nicely
-        };
-        return;
+        }
+        return
     }
 
-    const dbHost = `${neonProjectId}.cloud.neon.tech`;
+    const dbHost = `${neonProjectId}.cloud.neon.tech`
 
-    const postgresDbUrl = `postgres://${dbUser}:${dbPassword}@${dbHost}/?options=project%3D${neonProjectId}`;
-    const migrationCallbackUrl = new URL(`https://${process.env.WEBSITE_HOSTNAME}/api/copy-db`);
+    const postgresDbUrl = `postgres://${dbUser}:${dbPassword}@${dbHost}/?options=project%3D${neonProjectId}`
+    const migrationCallbackUrl = new URL(`https://${process.env.WEBSITE_HOSTNAME}/api/copy-db`)
     migrationCallbackUrl.search = new URLSearchParams({
+        code: copyDbFunctionKey, //@TODO: code is missing here
         sourceDbName,
         targetDbName,
         dbUrl: postgresDbUrl,
-    }).toString();
+    }).toString()
     // context.log('MIGRATION CALLBACK URL', migrationCallbackUrl);
 
-    const prismaDbUrl = `postgresql://<user>:<password>@${dbHost}:5432/${targetDbName}`;
+    const prismaDbUrl = `postgresql://<user>:<password>@${dbHost}:5432/${targetDbName}`
 
     // 2. Dispatch migration workflow
-    const ghRepo = 'dein-ding/azure-functions-test'; // the repo where the workflow is located
+    const ghRepo = 'dein-ding/azure-functions-test' // the repo where the workflow is located
     const ghBody = {
         event_type: 'migration',
         client_payload: {
@@ -73,14 +76,14 @@ const httpTrigger: AzureFunction = async (context, req: HttpRequest) => {
             db_url: prismaDbUrl.replace('<user>', dbUser).replace('<password>', dbPassword),
             callback_url: migrationCallbackUrl.toString(),
         },
-    };
+    }
     const dispatchSuccessfulOrError: SuccessfulOrError = await axios
         .post(`https://api.github.com/repos/${ghRepo}/dispatches`, ghBody, getAuthHeader(githubApikey))
         .then(() => true)
-        .catch((err) => {
+        .catch(err => {
             // context.log('WORKFLOW DISPATCH FAILED:', err);
-            return err.response.data;
-        });
+            return err.response.data
+        })
 
     if (dispatchSuccessfulOrError !== true) {
         context.res = {
@@ -90,8 +93,8 @@ const httpTrigger: AzureFunction = async (context, req: HttpRequest) => {
                 response: dispatchSuccessfulOrError,
             }),
             headers: { 'Content-Type': 'application/json' }, // so that postman formats the response nicely
-        };
-        return;
+        }
+        return
     }
 
     context.res = {
@@ -101,7 +104,7 @@ const httpTrigger: AzureFunction = async (context, req: HttpRequest) => {
             message: 'Smoothly created db and dispatched migration workflow.',
         }),
         headers: { 'Content-Type': 'application/json' }, // so that postman formats the response nicely
-    };
-};
+    }
+}
 
-export default httpTrigger;
+export default httpTrigger
