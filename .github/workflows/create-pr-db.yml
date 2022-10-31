@@ -35,7 +35,7 @@ jobs:
         needs: [create-new-db]
         steps:
             - uses: actions/checkout@v2
-            - uses: ./.github/workflows/run-migration
+            - uses: .github/workflows/run-migration
               with:
                   branch: ${{ env.migration_source_branch }}
                   db_url: postgresql://${{ env.db_user }}:${{ env.db_password }}@${{ env.neon_project_id }}.cloud.neon.tech:5432/${{ env.target_db_name }}

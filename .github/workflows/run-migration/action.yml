@@ -27,7 +27,7 @@ jobs:
               uses: actions/checkout@v2
               with:
                   repository: dein-ding/todo-app # this will be obsolete when the workflow is located in the respective repo
-                  ref: ${{ github.event.client_payload.branch || inputs.branch }}
+                  ref: ${{ inputs.branch }}
 
             - name: Setup Node.js environment
               uses: actions/setup-node@v3
@@ -42,9 +42,9 @@ jobs:
             - run: npx prisma migrate deploy
               working-directory: ./server
               env:
-                  DATABASE_URL: ${{ github.event.client_payload.db_url || inputs.db_url }}
+                  DATABASE_URL: ${{ inputs.db_url }}
 
             - name: Send Webhook callback
               env:
-                  url: ${{ github.event.client_payload.callback_url || inputs.callback_url }}
+                  url: ${{ inputs.callback_url }}
               run: if [[ -z $url ]]; then echo 'No callback'; else curl -X GET $url; fi;
