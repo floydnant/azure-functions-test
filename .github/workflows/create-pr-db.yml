@@ -24,11 +24,11 @@ jobs:
         steps:
             - name: Tell neon to create a new database
               run: |
-                  curl -X POST "https://console.neon.tech/api/v1/projects/$neon_project_id/databases" \
+                  curl -X POST "https://console.neon.tech/api/v1/projects/${{ env.neon_project_id }}/databases" \
                   -H 'accept: application/json' \
                   -H 'Content-Type: application/json' \
-                  -H "Authorization: Bearer $neon_api_key" \
-                  -d "{ \"database\": { \"name\": \"$target_db_name\", \"owner_id\": \"$neon_db_owner\" } }"
+                  -H "Authorization: Bearer ${{ env.neon_api_key }}" \
+                  -d '{ "database": { "name\": "${{ env.target_db_name }}", "owner_id": "${{ env.neon_db_owner }}" } }'
 
     migrate-db:
         runs-on: ubuntu-latest
@@ -47,10 +47,10 @@ jobs:
               env:
                   api_base_url: https://bb-floyd-playground-app.azurewebsites.net/api
               run: |
-                  curl -X POST "$api_base_url/copy-db?code=$azure_function_key" \
+                  curl -X POST "${{ env.api_base_url }}/copy-db?code=${{ env.azure_function_key }}" \
                   -H 'Content-Type: application/json' \
-                  -d "{ 
-                    \"sourceDbName\": \"$source_db_name\",
-                    \"targetDbName\": \"$target_db_name\",
-                    \"dbUrl\": \"postgres://$db_user:$db_password@$neon_project_id.cloud.neon.tech/?options=project%3D$neon_project_id\"
-                  }"
+                  -d '{ 
+                    "sourceDbName": "${{ env.source_db_name }}",
+                    "targetDbName": "${{ env.target_db_name }}",
+                    "dbUrl": "postgres://${{ env.db_user }}:${{ env.db_password }}@${{ env.neon_project_id }}.cloud.neon.tech/?options=project%3D${{ env.neon_project_id }}"
+                  }'
