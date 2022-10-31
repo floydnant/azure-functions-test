@@ -34,14 +34,17 @@ runs:
               cache-dependency-path: server/package-lock.json
 
         - run: npm ci
+          shell: bash
           working-directory: ./server
 
         - run: npx prisma migrate deploy
+          shell: bash
           working-directory: ./server
           env:
               DATABASE_URL: ${{ inputs.db_url }}
 
         - name: Send Webhook callback
+          shell: bash
           env:
               url: ${{ inputs.callback_url }}
           run: if [[ -z $url ]]; then echo 'No callback'; else curl -X GET $url; fi;
