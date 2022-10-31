@@ -1,0 +1,56 @@
+name: Create new DB, copy data from staging
+
+on:
+    pull_request:
+        types: [opened]
+
+env:
+    source_db_name: main # the db to grab the data from
+    target_db_name: pr-${{ github.event.number }}
+    db_user: ${{ secrets.DB_USER }}
+    db_password: ${{ secrets.DB_PASSWORD }}
+
+    migration_source_branch: main # the branch to grab migrations from
+
+    neon_project_id: fancy-mouse-984056
+    neon_api_key: ${{ secrets.NEON_API_KEY }}
+    neon_db_owner: 408233
+
+    azure_function_key: ${{ secrets.AZURE_FUNCTION_KEY }}
+
+jobs:
+    create-new-db:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Tell neon to create a new database
+              run: |
+                  curl -X POST "https://console.neon.tech/api/v1/projects/$neon_project_id/databases" \
+                  -H 'accept: application/json' \
+                  -H 'Content-Type: application/json' \
+                  -H "Authorization: Bearer $neon_api_key" \
+                  -d "{ \"database\": { \"name\": \"$target_db_name\", \"owner_id\": \"$neon_db_owner\" } }"
+
+    migrate-db:
+        runs-on: ubuntu-latest
+        needs: [create-new-db]
+        steps:
+            - uses: ./.github/workflows/run-migration.yml
+              with:
+                  branch: ${{ env.migration_source_branch }}
+                  db_url: postgresql://${{ env.db_user }}:${{ env.db_password }}@${{ env.neon_project_id }}.cloud.neon.tech:5432/${{ env.target_db_name }}
+
+    copy-data:
+        runs-on: ubuntu-latest
+        needs: [migrate-db]
+        steps:
+            - name: Copy the source database into the target database
+              env:
+                  api_base_url: https://bb-floyd-playground-app.azurewebsites.net/api
+              run: |
+                  curl -X POST "$api_base_url/copy-db?code=$azure_function_key" \
+                  -H 'Content-Type: application/json' \
+                  -d "{ 
+                    \"sourceDbName\": \"$source_db_name\",
+                    \"targetDbName\": \"$target_db_name\",
+                    \"dbUrl\": \"postgres://$db_user:$db_password@$neon_project_id.cloud.neon.tech/?options=project%3D$neon_project_id\"
+                  }"
