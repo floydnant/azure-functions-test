@@ -3,7 +3,7 @@ name: Run migration on specified branch and database
 on:
     repository_dispatch:
         types: [migration]
-    workflow_dispatch:
+    workflow_call:
         inputs:
             branch:
                 description: Branch/ref/SHA to get migrations from
