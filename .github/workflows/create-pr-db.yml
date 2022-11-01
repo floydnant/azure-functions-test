@@ -33,6 +33,7 @@ jobs:
 
     migrate-db:
         needs: [create-new-db]
+        runs-on: ubuntu-latest
         uses: ./.github/workflows/run-migrations.yml
         with:
             branch: ${{ github.env.migration_source_branch }}
