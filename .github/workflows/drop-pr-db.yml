@@ -15,10 +15,10 @@ jobs:
         steps:
             - name: Drop the PR database
               run: |
-                  curl -s
+                  curl -s \
                       -H 'accept: application/json' \
                       -H 'Content-Type: application/json' \
-                      -H 'Authorization: Bearer ${{ env.neon_api_key }}'
+                      -H 'Authorization: Bearer ${{ env.neon_api_key }}' \
                       -X DELETE "https://console.neon.tech/api/v1/projects/${{ env.neon_project_id }}/databases/$(
                           curl -s -X GET 'https://console.neon.tech/api/v1/projects/${{ env.neon_project_id }}/databases' \
                               -H 'accept: application/json' \
