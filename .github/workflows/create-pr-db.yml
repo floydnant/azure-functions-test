@@ -56,7 +56,7 @@ jobs:
               shell: bash
               working-directory: ./server
               env:
-                  DATABASE_URL: ${{ postgresql://${{ env.db_user }}:${{ env.db_password }}@${{ env.neon_project_id }}.cloud.neon.tech:5432/${{ env.target_db_name }} }}
+                  DATABASE_URL: postgresql://${{ env.db_user }}:${{ env.db_password }}@${{ env.neon_project_id }}.cloud.neon.tech:5432/${{ env.target_db_name }}
 
     copy-data:
         runs-on: ubuntu-latest
