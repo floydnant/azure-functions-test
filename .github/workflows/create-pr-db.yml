@@ -22,9 +22,6 @@ env:
 jobs:
     create-new-db:
         runs-on: ubuntu-latest
-        outputs:
-            migration_source_branch: ${{ env.migration_source_branch }}
-            postgres_url: postgresql://${{ env.db_user }}:${{ env.db_password }}@${{ env.neon_project_id }}.cloud.neon.tech:5432/${{ env.target_db_name }}
         steps:
             - name: Tell neon to create a new database
               run: |
@@ -36,10 +33,30 @@ jobs:
 
     migrate-db:
         needs: [create-new-db]
-        uses: ./.github/workflows/run-migrations.yml
-        with:
-            branch: ${{ needs.create-new-db.outputs.migration_source_branch }}
-            db_url: ${{ needs.create-new-db.outputs.postgres_url }}
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout branch
+              uses: actions/checkout@v2
+              with:
+                  repository: dein-ding/todo-app # this will be obsolete when the workflow is located in the respective repo
+                  ref: ${{ env.migration_source_branch }}
+
+            - name: Setup Node.js environment
+              uses: actions/setup-node@v3
+              with:
+                  node-version: 16.x
+                  cache: 'npm'
+                  cache-dependency-path: server/package-lock.json
+
+            - run: npm ci
+              shell: bash
+              working-directory: ./server
+
+            - run: npx prisma migrate deploy
+              shell: bash
+              working-directory: ./server
+              env:
+                  DATABASE_URL: ${{ postgresql://${{ env.db_user }}:${{ env.db_password }}@${{ env.neon_project_id }}.cloud.neon.tech:5432/${{ env.target_db_name }} }}
 
     copy-data:
         runs-on: ubuntu-latest
