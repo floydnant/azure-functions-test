@@ -22,6 +22,9 @@ env:
 jobs:
     create-new-db:
         runs-on: ubuntu-latest
+        outputs:
+            migration_source_branch: ${{ github.env.migration_source_branch }}
+            postgres_url: postgresql://${{ github.env.db_user }}:${{ github.env.db_password }}@${{ github.env.neon_project_id }}.cloud.neon.tech:5432/${{ github.env.target_db_name }}
         steps:
             - name: Tell neon to create a new database
               run: |
@@ -33,11 +36,10 @@ jobs:
 
     migrate-db:
         needs: [create-new-db]
-        runs-on: ubuntu-latest
         uses: ./.github/workflows/run-migrations.yml
         with:
-            branch: ${{ github.env.migration_source_branch }}
-            db_url: postgresql://${{ github.env.db_user }}:${{ github.env.db_password }}@${{ github.env.neon_project_id }}.cloud.neon.tech:5432/${{ github.env.target_db_name }}
+            branch: ${{ needs.create-new-db.outputs.migration_source_branch }}
+            db_url: ${{ needs.create-new-db.outputs.postgres_url }}
 
     copy-data:
         runs-on: ubuntu-latest
