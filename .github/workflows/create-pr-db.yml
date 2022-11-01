@@ -23,8 +23,8 @@ jobs:
     create-new-db:
         runs-on: ubuntu-latest
         outputs:
-            migration_source_branch: ${{ github.env.migration_source_branch }}
-            postgres_url: postgresql://${{ github.env.db_user }}:${{ github.env.db_password }}@${{ github.env.neon_project_id }}.cloud.neon.tech:5432/${{ github.env.target_db_name }}
+            migration_source_branch: ${{ env.migration_source_branch }}
+            postgres_url: postgresql://${{ env.db_user }}:${{ env.db_password }}@${{ env.neon_project_id }}.cloud.neon.tech:5432/${{ env.target_db_name }}
         steps:
             - name: Tell neon to create a new database
               run: |
