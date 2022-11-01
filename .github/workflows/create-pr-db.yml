@@ -3,6 +3,7 @@ name: Create new DB, copy data from staging
 on:
     pull_request:
         types: [opened]
+    push:
 
 env:
     source_db_name: main # the db to grab the data from
@@ -25,10 +26,20 @@ jobs:
             - name: Tell neon to create a new database
               run: |
                   curl -X POST 'https://console.neon.tech/api/v1/projects/${{ env.neon_project_id }}/databases' \
-                  -H 'accept: application/json' \
-                  -H 'Content-Type: application/json' \
-                  -H 'Authorization: Bearer ${{ env.neon_api_key }}' \
-                  -d '{ "database": { "name": "${{ env.target_db_name }}", "owner_id": ${{ env.neon_db_owner }} } }'
+                      -H 'accept: application/json' \
+                      -H 'Content-Type: application/json' \
+                      -H 'Authorization: Bearer ${{ env.neon_api_key }}' \
+                      -d '{ "database": { "name": "${{ env.target_db_name }}", "owner_id": ${{ env.neon_db_owner }} } }' \
+                      --silent \
+                      --insecure \
+                      --output res.body \
+                      --write-out %{http_code} \
+                    > res.code 2> res.errors
+
+                    status_code=$(cat res.code)
+                    echo "Status: $status_code"
+                    echo "Body: $(cat res.body)"
+                    if [[ $status_code -ne 201 ]]; then echo -e 'ERROR: Check body above' && exit 1; fi
 
     migrate-db:
         needs: [create-new-db]
