@@ -6,6 +6,8 @@ type ColumnValue = string | number | null
 type Rows = Record<string, ColumnValue>[]
 type DbDumpResult = [tableName: string, rows: Rows][]
 
+type SuccessfulOrError = true | Record<string, string>
+
 // get all tables: SELECT * FROM information_schema.tables WHERE table_type = 'BASE TABLE' AND table_name NOT LIKE 'pg_%' AND table_name NOT LIKE 'sql_%'
 // get all dbs: SELECT datname FROM pg_database
 
@@ -42,7 +44,7 @@ const httpTrigger: AzureFunction = async (context, req: HttpRequest) => {
 
     // 4. Copy the dump into the newly created db
     context.log('COPY INTO TARGET')
-    await Promise.all(
+    const successfulOrError: SuccessfulOrError = await Promise.all(
         sourceDbDump.map(
             // @TODO: perhaps this would be a good use case for transactions
             ([tableName, rows]) => {
@@ -52,18 +54,39 @@ const httpTrigger: AzureFunction = async (context, req: HttpRequest) => {
             }
         )
     )
+        .then(() => true)
+        .catch(err => err)
+
+    if (successfulOrError !== true) {
+        context.res = {
+            status: 500,
+            body: JSON.stringify({
+                message: 'Something went wrong copying the data.',
+                error: successfulOrError,
+            }),
+            headers: { 'Content-Type': 'application/json' }, // so that postman formats the response nicely
+        }
+        return
+    }
 
     // 5. Verify, that copy succeeded
     context.log('DUMP TARGET')
     const targetDbDump = await getDbDump(targetSql)
     const isAcurateMatch = JSON.stringify(sourceDbDump) == JSON.stringify(targetDbDump)
+    if (!isAcurateMatch) {
+        context.res = {
+            status: 500,
+            body: JSON.stringify({
+                message: 'There have not been any errors, but the db dumps do not match.',
+            }),
+            headers: { 'Content-Type': 'application/json' }, // so that postman formats the response nicely
+        }
+        return
+    }
 
     context.res = {
         status: 200,
-        body: JSON.stringify({
-            isAcurateMatch,
-            message: '',
-        }),
+        body: JSON.stringify({ message: 'Copied data smoothly.' }),
         headers: { 'Content-Type': 'application/json' }, // so that postman formats the response nicely
     }
 }
