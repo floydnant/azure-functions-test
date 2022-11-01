@@ -3,7 +3,6 @@ name: Create new DB, copy data from staging
 on:
     pull_request:
         types: [opened]
-    push:
 
 env:
     source_db_name: main # the db to grab the data from
