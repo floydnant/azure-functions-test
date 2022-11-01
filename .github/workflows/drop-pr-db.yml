@@ -6,10 +6,8 @@ on:
 
 env:
     target_db_name: pr-${{ github.event.number }}
-
     neon_project_id: fancy-mouse-984056
     neon_api_key: ${{ secrets.NEON_API_KEY }}
-    neon_db_owner: 408233
 
 jobs:
     create-new-db:
