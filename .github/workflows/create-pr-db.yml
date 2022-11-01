@@ -32,14 +32,11 @@ jobs:
                   -d '{ "database": { "name": "${{ env.target_db_name }}", "owner_id": ${{ env.neon_db_owner }} } }'
 
     migrate-db:
-        env:
-            branch: ${{ github.env.migration_source_branch }}
-            db_url: postgresql://${{ github.env.db_user }}:${{ github.env.db_password }}@${{ github.env.neon_project_id }}.cloud.neon.tech:5432/${{ github.env.target_db_name }}
         needs: [create-new-db]
         uses: ./.github/workflows/run-migrations.yml
         with:
-            branch: ${{ env.branch }}
-            db_url: ${{ env.db_url }}
+            branch: ${{ github.env.migration_source_branch }}
+            db_url: postgresql://${{ github.env.db_user }}:${{ github.env.db_password }}@${{ github.env.neon_project_id }}.cloud.neon.tech:5432/${{ github.env.target_db_name }}
 
     copy-data:
         runs-on: ubuntu-latest
