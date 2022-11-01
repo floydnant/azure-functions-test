@@ -73,6 +73,7 @@ jobs:
             - name: Copy the source database into the target database
               env:
                   api_base_url: https://bb-floyd-playground-app.azurewebsites.net/api
+              # @TODO: Add status code validation -> make ci check fail
               run: |
                   curl -X POST "${{ env.api_base_url }}/copy-db?code=${{ env.azure_function_key }}" \
                   -H 'Content-Type: application/json' \
