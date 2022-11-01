@@ -1,0 +1,33 @@
+name: Drop the database associated with the PR
+
+on:
+    pull_request:
+        types: [closed]
+
+env:
+    target_db_name: pr-${{ github.event.number }}
+
+    neon_project_id: fancy-mouse-984056
+    neon_api_key: ${{ secrets.NEON_API_KEY }}
+    neon_db_owner: 408233
+
+jobs:
+    create-new-db:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Get database id from PR number
+              id: get-db-id
+              run: |
+                  db_id=$(
+                        curl -X GET 'https://console.neon.tech/api/v1/projects/${{ env.neon_project_id }}/databases' \
+                            -H 'accept: application/json' \
+                            -H 'Authorization: Bearer ${{ env.neon_api_key }}' |
+                        jq -c '.[] | select(.name | inside("${{ env.target_db_name }}")) | .id'
+                    )
+                  echo "db_id=$db_id" >> $GITHUB_OUTPUT
+            - name: Drop the PR database
+              run: |
+                  curl -X DELETE 'https://console.neon.tech/api/v1/projects/${{ env.neon_project_id }}/databases/${{ steps.get-db-id.outputs.db_id }}'
+                      -H 'accept: application/json' \
+                      -H 'Content-Type: application/json' \
+                      -H 'Authorization: Bearer ${{ env.neon_api_key }}'
