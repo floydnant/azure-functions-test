@@ -34,12 +34,11 @@ jobs:
                       --insecure \
                       --output res.body \
                       --write-out %{http_code} \
-                    > res.code 2> res.errors
+                  > res.status_code 2> res.errors
 
-                    status_code=$(cat res.code)
-                    echo "Status: $status_code"
-                    echo "Body: $(cat res.body)"
-                    if [[ $status_code -ne 201 ]]; then echo -e 'ERROR: Check body above' && exit 1; fi
+                  echo "Status: $(cat res.status_code)"
+                  echo "Body: $(cat res.body)"
+                  if [[ $(cat res.status_code) -ne 201 ]]; then exit 1; fi
 
     migrate-db:
         needs: [create-new-db]
