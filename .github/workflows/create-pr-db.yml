@@ -33,8 +33,8 @@ jobs:
 
     migrate-db:
         env:
-            branch: ${{ env.migration_source_branch }}
-            db_url: postgresql://${{ env.db_user }}:${{ env.db_password }}@${{ env.neon_project_id }}.cloud.neon.tech:5432/${{ env.target_db_name }}
+            branch: ${{ github.env.migration_source_branch }}
+            db_url: postgresql://${{ github.env.db_user }}:${{ github.env.db_password }}@${{ github.env.neon_project_id }}.cloud.neon.tech:5432/${{ github.env.target_db_name }}
         needs: [create-new-db]
         uses: ./.github/workflows/run-migrations.yml
         with:
