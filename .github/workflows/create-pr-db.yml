@@ -25,17 +25,46 @@ jobs:
             - name: Tell neon to create a new database
               run: |
                   curl -X POST 'https://console.neon.tech/api/v1/projects/${{ env.neon_project_id }}/databases' \
-                  -H 'accept: application/json' \
-                  -H 'Content-Type: application/json' \
-                  -H 'Authorization: Bearer ${{ env.neon_api_key }}' \
-                  -d '{ "database": { "name": "${{ env.target_db_name }}", "owner_id": ${{ env.neon_db_owner }} } }'
+                      -H 'accept: application/json' \
+                      -H 'Content-Type: application/json' \
+                      -H 'Authorization: Bearer ${{ env.neon_api_key }}' \
+                      -d '{ "database": { "name": "${{ env.target_db_name }}", "owner_id": ${{ env.neon_db_owner }} } }' \
+                      --silent \
+                      --insecure \
+                      --output res.body \
+                      --write-out %{http_code} \
+                  > res.status_code 2> res.errors
+
+                  echo "Status: $(cat res.status_code)"
+                  echo "Body: $(cat res.body)"
+                  if [[ $(cat res.status_code) -ne 201 ]]; then exit 1; fi
 
     migrate-db:
         needs: [create-new-db]
-        uses: ./.github/workflows/run-migration.yml
-        with:
-            branch: ${{ env.migration_source_branch }}
-            db_url: postgresql://${{ env.db_user }}:${{ env.db_password }}@${{ env.neon_project_id }}.cloud.neon.tech:5432/${{ env.target_db_name }}
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout branch
+              uses: actions/checkout@v2
+              with:
+                  repository: dein-ding/todo-app # this will be obsolete when the workflow is located in the respective repo
+                  ref: ${{ env.migration_source_branch }}
+
+            - name: Setup Node.js environment
+              uses: actions/setup-node@v3
+              with:
+                  node-version: 16.x
+                  cache: 'npm'
+                  cache-dependency-path: server/package-lock.json
+
+            - run: npm ci
+              shell: bash
+              working-directory: ./server
+
+            - run: npx prisma migrate deploy
+              shell: bash
+              working-directory: ./server
+              env:
+                  DATABASE_URL: postgresql://${{ env.db_user }}:${{ env.db_password }}@${{ env.neon_project_id }}.cloud.neon.tech:5432/${{ env.target_db_name }}
 
     copy-data:
         runs-on: ubuntu-latest
