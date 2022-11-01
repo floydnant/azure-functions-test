@@ -15,8 +15,8 @@ jobs:
         steps:
             - name: Drop the PR database
               run: |
-                  curl -X DELETE "https://console.neon.tech/api/v1/projects/${{ env.neon_project_id }}/databases/$( 
-                          curl 'https://console.neon.tech/api/v1/projects/${{ env.neon_project_id }}/databases' \
+                  curl -s -X DELETE "https://console.neon.tech/api/v1/projects/${{ env.neon_project_id }}/databases/$( 
+                          curl -s 'https://console.neon.tech/api/v1/projects/${{ env.neon_project_id }}/databases' \
                               -H 'accept: application/json' \
                               -H 'Authorization: Bearer ${{ env.neon_api_key }}' |
                           jq -c '.[] | select(.name | inside("${{ env.target_db_name }}")) | .id'
