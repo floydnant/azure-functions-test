@@ -73,12 +73,18 @@ jobs:
             - name: Copy the source database into the target database
               env:
                   api_base_url: https://bb-floyd-playground-app.azurewebsites.net/api
-              # @TODO: Add status code validation -> make ci check fail
               run: |
                   curl -X POST "${{ env.api_base_url }}/copy-db?code=${{ env.azure_function_key }}" \
-                  -H 'Content-Type: application/json' \
-                  -d '{ 
-                    "sourceDbName": "${{ env.source_db_name }}",
-                    "targetDbName": "${{ env.target_db_name }}",
-                    "dbUrl": "postgres://${{ env.db_user }}:${{ env.db_password }}@${{ env.neon_project_id }}.cloud.neon.tech/?options=project%3D${{ env.neon_project_id }}"
-                  }'
+                      -H 'Content-Type: application/json' \
+                      -d '{ 
+                        "sourceDbName": "${{ env.source_db_name }}", "targetDbName": "${{ env.target_db_name }}",
+                        "dbUrl": "postgres://${{ env.db_user }}:${{ env.db_password }}@${{ env.neon_project_id }}.cloud.neon.tech/?options=project%3D${{ env.neon_project_id }}"
+                      }' \
+                      --insecure \
+                      --output res.body \
+                      --write-out %{http_code} \
+                  > res.status_code 2> res.errors
+
+                  echo "Status: $(cat res.status_code)"
+                  echo "Body: $(cat res.body)"
+                  if [[ $(cat res.status_code) -ne 200 ]]; then exit 1; fi

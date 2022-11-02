@@ -14,7 +14,6 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - name: Drop the PR database
-              # @TODO: Add status code validation -> make ci check fail
               run: |
                   curl -s -X DELETE "https://console.neon.tech/api/v1/projects/${{ env.neon_project_id }}/databases/$( 
                           curl -s 'https://console.neon.tech/api/v1/projects/${{ env.neon_project_id }}/databases' \
@@ -24,4 +23,12 @@ jobs:
                       )" \
                       -H 'accept: application/json' \
                       -H 'Content-Type: application/json' \
-                      -H 'Authorization: Bearer ${{ env.neon_api_key }}'
+                      -H 'Authorization: Bearer ${{ env.neon_api_key }}' \
+                      --insecure \
+                      --output res.body \
+                      --write-out %{http_code} \
+                  > res.status_code 2> res.errors
+
+                  echo "Status: $(cat res.status_code)"
+                  echo "Body: $(cat res.body)"
+                  if [[ $(cat res.status_code) -ne 200 ]]; then exit 1; fi
