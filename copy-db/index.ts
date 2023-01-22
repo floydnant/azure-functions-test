@@ -57,16 +57,16 @@ const httpTrigger: AzureFunction = async (context, req: HttpRequest) => {
         .then(() => true)
         .catch(err => err)
 
-    if (successfulOrError !== true) {
+    if (successfulOrError !== true && Object.keys(successfulOrError).length > 0) {
         context.res = {
             status: 500,
             body: JSON.stringify({
-                message: 'Something went wrong copying the data.',
+                message: "Something went wrong copying the data.",
                 error: successfulOrError,
             }),
-            headers: { 'Content-Type': 'application/json' }, // so that postman formats the response nicely
-        }
-        return
+            headers: {"Content-Type": "application/json"}, // so that postman formats the response nicely
+        };
+        return;
     }
 
     // 5. Verify, that copy succeeded
