@@ -33,6 +33,7 @@ const httpTrigger: AzureFunction = async (context, req: HttpRequest) => {
         sourceDbName,
         targetDbName,
         dbUrl, // postgres://<user>:<password>@<host>/?options=project%3D<neon-project-id>
+        confirmExactMatch = false,
     } = req.body || req.query
 
     const sourceSql = postgres(dbUrl, { ssl: 'require', database: sourceDbName })
@@ -70,18 +71,20 @@ const httpTrigger: AzureFunction = async (context, req: HttpRequest) => {
     }
 
     // 5. Verify, that copy succeeded
-    context.log('DUMP TARGET')
-    const targetDbDump = await getDbDump(targetSql)
-    const isAcurateMatch = JSON.stringify(sourceDbDump) == JSON.stringify(targetDbDump)
-    if (!isAcurateMatch) {
-        context.res = {
-            status: 500,
-            body: JSON.stringify({
-                message: 'There have not been any errors, but the db dumps do not match.',
-            }),
-            headers: { 'Content-Type': 'application/json' }, // so that postman formats the response nicely
+    if (confirmExactMatch) {
+        context.log('DUMP TARGET')
+        const targetDbDump = await getDbDump(targetSql)
+        const isAcurateMatch = JSON.stringify(sourceDbDump) == JSON.stringify(targetDbDump)
+        if (!isAcurateMatch) {
+            context.res = {
+                status: 500,
+                body: JSON.stringify({
+                    message: 'There have not been any errors, but the db dumps do not match.',
+                }),
+                headers: { 'Content-Type': 'application/json' }, // so that postman formats the response nicely
+            }
+            return
         }
-        return
     }
 
     context.res = {
