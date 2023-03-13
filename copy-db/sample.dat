@@ -1,5 +1,6 @@
 {
     "sourceDbName": "<db>",
     "targetDbName": "<db>",
-    "dbUrl": "postgres://<user>:<password>@<host>/?options=project%3D<neon-project-id>"
+    "dbUrl": "postgres://<user>:<password>@<host>/?options=project%3D<neon-project-id>",
+    "confirmExactMatch": false
 }
